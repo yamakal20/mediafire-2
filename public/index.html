@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaFire Direct Link</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .card {
+      background: #1e293b;
+      padding: 28px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.4);
+    }
+    h1 { font-size: 20px; margin-bottom: 6px; }
+    p.sub { font-size: 13px; color: #94a3b8; margin-bottom: 18px; }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .result {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #0f172a;
+      font-size: 13px;
+      word-break: break-all;
+      display: none;
+    }
+    .result.show { display: block; }
+    .result a { color: #60a5fa; }
+    .err { color: #f87171; }
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .actions button { flex: 1; font-size: 13px; padding: 9px; }
+    .copy-btn { background: #475569; }
+    .go-btn { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>MediaFire → Direct Link</h1>
+    <p class="sub">MediaFire link ထည့်ပြီး direct download link ရယူပါ</p>
+
+    <input id="link" type="text" placeholder="https://www.mediafire.com/file/..." />
+    <button id="btn" onclick="getDirect()">Direct Link ထုတ်မယ်</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById("btn");
+    const resultBox = document.getElementById("result");
+    let lastDirect = "";
+
+    async function getDirect() {
+      const input = document.getElementById("link").value.trim();
+      if (!input) return;
+
+      btn.disabled = true;
+      btn.textContent = "ရှာနေသည်...";
+      resultBox.className = "result show";
+      resultBox.innerHTML = "ခဏစောင့်ပါ...";
+
+      try {
+        const res = await fetch("/api/direct?url=" + encodeURIComponent(input));
+        const data = await res.json();
+
+        if (data.success) {
+          lastDirect = data.direct;
+          resultBox.innerHTML = `
+            <div><strong>Direct Link:</strong></div>
+            <a href="${data.direct}" target="_blank">${data.direct}</a>
+            <div class="actions">
+              <button class="copy-btn" onclick="copyLink()">Copy</button>
+              <button class="go-btn" onclick="window.open(lastDirect,'_blank')">Download</button>
+            </div>`;
+        } else {
+          resultBox.innerHTML = `<span class="err">${data.error}</span>`;
+        }
+      } catch (e) {
+        resultBox.innerHTML = `<span class="err">ချိတ်ဆက်မှု မအောင်မြင်ပါ: ${e.message}</span>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Direct Link ထုတ်မယ်";
+      }
+    }
+
+    function copyLink() {
+      navigator.clipboard.writeText(lastDirect);
+      alert("Copy ပြီးပါပြီ!");
+    }
+
+    // Enter key support
+    document.getElementById("link").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") getDirect();
+    });
+  </script>
+</body>
+</html>
